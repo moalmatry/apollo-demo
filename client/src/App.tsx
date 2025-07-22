@@ -1,59 +1,44 @@
-import { Graffle } from "graffle";
-import { use, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import "./App.css";
+import { graphql } from "./graphql";
+import { execute } from "./graphql/execute";
 
-const App = () => {
-  const graffle = Graffle.create().transport({
-    url: "https://countries.trevorblades.com/graphql",
-  });
-  const { data, isLoading } = useQuery({
-    queryKey: ["data"],
-    queryFn: async () =>
-      await graffle.gql`
-        query myQuery ($filter: [String!]) {
-          countries (filter: { name: { in: $filter } }) {
-            name
-            continent {
-              name
-            }
-          }
-        }
-      `.send({ filter: [`Canada`, `Germany`, `Japan`] }),
-  });
-
-  const { data: dataTwo, isLoading: isLoadingTwo } = useQuery({
-    queryKey: ["dataTwo"],
-    queryFn: async () =>
-      await graffle.gql`
-        query myQuery ($filter: [String!]) {
-          countries (filter: { name: { in: $filter } }) {
-            name
-            continent {
-              name
-            }
-          }
-        }
-      `.send({ filter: [`Canada`, `Germany`, `Japan`] }),
-  });
-
-  useEffect(() => {
-    if (isLoading) {
-      console.log("Loading data...");
-    } else {
-      console.log("Data loaded:", data);
+function App() {
+  // current api  https://countries.trevorblades.com/graphql
+  // const [count, setCount] = useState(0);
+  const country = graphql(`
+    query Continents {
+      continents {
+        code
+        name
+      }
     }
+  `);
+  const testHandler = async () => {
+    const { continents } = await execute(country);
+    alert(continents.map((c) => c.name).join(", "));
+  };
 
-    if (isLoadingTwo) {
-      console.log("Loading second data set...");
-    } else {
-      console.log("Second data loaded:", dataTwo);
-    }
-  }, [data, isLoading, dataTwo, isLoadingTwo]);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["continents"],
+    queryFn: async () => await execute(country),
+  });
+
+  if (isLoading) return <div>Loading...</div>;
+  if (isError) return <div>Error loading {isError}</div>;
   return (
-    <div>
-      <h1>Welcome to My App</h1>
-    </div>
+    <>
+      <h1>Hello World</h1>
+      <button onClick={testHandler}>Test</button>
+      <h1>All Continents</h1>
+      {data?.continents.map((continent) => (
+        <div key={continent.code}>
+          <h2>{continent.name}</h2>
+          <p>Code: {continent.code}</p>
+        </div>
+      ))}
+    </>
   );
-};
+}
 
 export default App;
